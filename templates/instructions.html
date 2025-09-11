@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Instructions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.7;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        ol {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        li {
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 30px;
+            font-size: 16px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Interview Instructions</h1>
+
+    <p>Please read the following instructions carefully before beginning your interview:</p>
+
+    <ol>
+        <!-- <li><strong>Prepare a quiet environment:</strong> Ensure you are in a noise-free area with a reliable microphone.</li> -->
+        <li><strong>Review the questions:</strong> You will be asked one question at a time. Each question appears in a dropdown menu.</li>
+        <li><strong>Start Recording:</strong> Click the <strong>“Start Recording”</strong> button to begin answering the question <strong>verbally</strong>.</li>
+        <li><strong>Stop Recording:</strong> Once you finish speaking, click the <strong>“Stop Recording”</strong> button.</li>
+        <li><strong>Auto Progress:</strong> After each response, the next question will be automatically selected for you.</li>
+        <li><strong>Do not refresh the page:</strong> Doing so may cause all recorded responses to be lost.</li>
+        <li><strong>Complete All Questions:</strong> Continue until all <strong>4</strong> questions have been answered.</li>
+        <li><strong>Finalize:</strong> When you are done, click the <strong>“Finalize Interview”</strong> button to submit your answers for analysis.</li>
+        <li><strong>Privacy:</strong> Your responses will be securely saved and analyzed, and a detailed feedback report will be generated.</li>
+    </ol>
+
+    <button onclick="goToInterview()">Proceed to Interview</button>
+
+    <script>
+        // function goToInterview() {
+        //     const profileId = localStorage.getItem("profileId");
+        //     if (!profileId) {
+        //         alert("Profile ID not found. Please return to the landing page.");
+        //         window.location.href = "/";
+        //     } else {
+        //         window.location.href = "/interview";
+        //     }
+        // }
+
+
+
+        function goToInterview() {
+            const profileId = localStorage.getItem("profileId");
+            if (!profileId) {
+                alert("Profile ID not found. Please return to the landing page.");
+                window.location.href = "/";
+            } else {
+                window.location.href = "/jobLoved";
+            }
+        }
+
+    </script>
+
+</body>
+</html>

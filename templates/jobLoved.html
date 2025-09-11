@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job You Love - Video Interview</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        video {
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        #startBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #startBtn:hover {
+            background-color: #1976D2;
+        }
+
+        #stopBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #stopBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        #proceedBtn {
+            background-color: #4CAF50;
+            color: white;
+            display: none; /* initially hidden */
+        }
+        #proceedBtn:hover {
+            background-color: #45a049;
+        }
+
+        #questionText {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        #feedback {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #555;
+            white-space: pre-wrap;
+            text-align: left;
+            min-height: 100px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="questionText">What job do you really like and why?</div>
+
+        <video id="preview" autoplay muted playsinline></video><br>
+
+        <button id="startBtn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop Recording</button>
+        <button id="proceedBtn">Proceed to Interview</button>
+
+        <div id="feedback">Ready to start recording.</div>
+    </div>
+
+<script>
+    const question = "What job do you really like and why?";
+    let mediaRecorder;
+    let recordedChunks = [];
+    let stream;
+    const profileId = localStorage.getItem('profileId') || 'unknown';
+
+    let recordedAnswer = "";
+    let jobOverview = "";
+
+    window.onload = async () => {
+        const preview = document.getElementById('preview');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const proceedBtn = document.getElementById('proceedBtn');
+        const feedback = document.getElementById('feedback');
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            preview.srcObject = stream;
+            feedback.innerText = "🎬 Camera and microphone ready.";
+        } catch (err) {
+            alert("Camera/mic error: " + err.message);
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            feedback.innerText = "⚠️ Unable to access camera/microphone.";
+            return;
+        }
+
+        startBtn.onclick = () => {
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.start();
+            feedback.innerText = "🎥 Recording...";
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            proceedBtn.style.display = "none";
+        };
+
+        stopBtn.onclick = () => {
+            stopBtn.disabled = true;
+            mediaRecorder.stop();
+
+            mediaRecorder.onstop = async () => {
+                feedback.innerText = "🔄 Uploading and transcribing...";
+
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const formData = new FormData();
+                formData.append('video_data', blob, 'response.webm');
+                formData.append('question', question);
+
+                try {
+                    // Upload video, get transcription
+                    const uploadRes = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const transcriptData = await uploadRes.json();
+
+                    if (transcriptData.error) {
+                        feedback.innerText = `❌ Upload error: ${transcriptData.error}`;
+                        startBtn.disabled = false;
+                        return;
+                    }
+
+                    recordedAnswer = transcriptData.answer || "";
+                    if (!recordedAnswer) {
+                        feedback.innerText = "⚠️ No clear transcription detected. Please try again.";
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        return;
+                    }
+
+                    feedback.innerText = "🗣️ Transcription received. Getting profession overview...";
+
+                    // Get profession overview
+                    const overviewRes = await fetch('/overview', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ answer: recordedAnswer })
+                    });
+                    const overviewData = await overviewRes.json();
+
+                    if (overviewData.error) {
+                        feedback.innerText = `❌ Overview error: ${overviewData.error}`;
+                        startBtn.disabled = false;
+                        return;
+                    }
+
+                    jobOverview = overviewData.overview || "Overview not available.";
+
+                    feedback.innerText =
+                        `📋 Profession Overview:\n${jobOverview}\n\n` +
+                        `🗣️ Your Answer:\n${recordedAnswer}\n\n` +
+                        `✅ When ready, click "Proceed to Interview".`;
+
+                    // Hide recording buttons, show proceed
+                    startBtn.style.display = "none";
+                    stopBtn.style.display = "none";
+                    proceedBtn.style.display = "inline-block";
+
+                } catch (err) {
+                    console.error("Error processing video:", err);
+                    feedback.innerText = "❌ Failed to process or fetch overview.";
+                    startBtn.disabled = false;
+                }
+            };
+        };
+
+        proceedBtn.onclick = () => {
+            // Save answer and overview in localStorage (or sessionStorage)
+            localStorage.setItem('jobAnswer', recordedAnswer);
+            localStorage.setItem('jobOverview', jobOverview);
+
+            // Redirect to main interview page
+            window.location.href = "/interview";
+        };
+    };
+</script>
+</body>
+</html>

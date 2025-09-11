@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Interview</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        video {
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        #startBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #startBtn:hover {
+            background-color: #1976D2;
+        }
+        #stopBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #stopBtn:hover {
+            background-color: #d32f2f;
+        }
+        #finalizeBtn {
+            background-color: #4CAF50;
+            color: white;
+            display: none; /* Hidden until last question done */
+        }
+        #finalizeBtn:hover {
+            background-color: #45a049;
+        }
+        #questionText {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #222;
+        }
+        #feedback {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #555;
+            white-space: pre-wrap;
+            text-align: left;
+            min-height: 100px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="questionText"></div>
+    <video id="preview" autoplay muted playsinline></video><br>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <button id="finalizeBtn">Finalize Interview</button>
+    <div id="feedback">Ready to start interview.</div>
+</div>
+
+<script>
+    const questions = [
+        "Can you tell me about a subject or topic you really enjoy and why it interests you?",
+        "What is one challenge you have faced in your studies, and how did you overcome it?",
+        "How do you prepare for exams or assignments?",
+        "What are your future goals?"
+    ];
+
+    let currentQuestionIndex = 0;
+    let mediaRecorder;
+    let recordedChunks = [];
+    let stream;
+    const profileId = localStorage.getItem('profileId') || 'unknown';
+
+    const responses = [];
+
+    const questionText = document.getElementById('questionText');
+    const preview = document.getElementById('preview');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const finalizeBtn = document.getElementById('finalizeBtn');
+    const feedback = document.getElementById('feedback');
+
+    window.onload = async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            preview.srcObject = stream;
+            feedback.innerText = "🎬 Camera and microphone ready.";
+        } catch (err) {
+            alert("Camera/mic error: " + err.message);
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            feedback.innerText = "⚠️ Unable to access camera/microphone.";
+            return;
+        }
+        showCurrentQuestion();
+
+        startBtn.onclick = startRecording;
+        stopBtn.onclick = stopRecording;
+        finalizeBtn.onclick = finalizeInterview;
+    };
+
+    function showCurrentQuestion() {
+        questionText.textContent = questions[currentQuestionIndex];
+        feedback.textContent = "Ready to start recording.";
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    }
+
+    function startRecording() {
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        mediaRecorder.start();
+        feedback.textContent = "🎥 Recording...";
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+    }
+
+    function stopRecording() {
+        stopBtn.disabled = true;
+        mediaRecorder.stop();
+
+        mediaRecorder.onstop = async () => {
+            feedback.textContent = "🔄 Uploading and transcribing...";
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const formData = new FormData();
+            formData.append('video_data', blob, 'response.webm');
+            formData.append('question', questions[currentQuestionIndex]);
+
+            try {
+                const uploadRes = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const transcriptData = await uploadRes.json();
+
+                if (transcriptData.error) {
+                    feedback.textContent = `❌ Upload error: ${transcriptData.error}`;
+                    startBtn.disabled = false;
+                    return;
+                }
+
+                const answer = transcriptData.answer || "";
+
+                if (!answer) {
+                    feedback.textContent = "⚠️ No clear transcription detected. Please try again.";
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    return;
+                }
+
+                responses.push({ question: questions[currentQuestionIndex], answer });
+
+                currentQuestionIndex++;
+
+                if (currentQuestionIndex >= questions.length) {
+                    // Last question done
+                    startBtn.style.display = "none";
+                    stopBtn.style.display = "none";
+                    alert("🎉 Interview is done! Click 'Finalize Interview' to complete.");
+                    finalizeBtn.style.display = "inline-block";
+                    feedback.textContent = "All questions answered. Please finalize the interview.";
+                } else {
+                    // More questions
+                    showCurrentQuestion();
+                }
+            } catch (err) {
+                console.error("Error uploading video:", err);
+                feedback.textContent = "❌ Failed to upload or transcribe.";
+                startBtn.disabled = false;
+            }
+        };
+    }
+
+    function finalizeInterview() {
+        feedback.textContent = "⏳ Finalizing interview...";
+        finalizeBtn.disabled = true;
+
+        fetch('/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                profile_id: profileId,
+                responses: responses
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            feedback.textContent = "✅ Interview finalized! Here is your report:\n\n" + (data.report || "[No report]");
+            // Optionally do more, e.g. show download link or redirect
+
+            // Change button to redirect back to Qualtrics
+            finalizeBtn.textContent = "Return to Survey";
+            finalizeBtn.disabled = false;
+            finalizeBtn.onclick = function () {
+                window.location.href = "https://yourqualtricssurvey.qualtrics.com/jfe/form/SV_XXXXXXXX"; // <-- Put real Qualtrics URL here
+        };
+        })
+        .catch(err => {
+            console.error(err);
+            feedback.textContent = "❌ Failed to finalize interview.";
+            finalizeBtn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>

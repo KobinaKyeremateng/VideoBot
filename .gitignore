@@ -1,0 +1,22 @@
+# Ignore virtual environments
+venv/
+.env
+
+# Ignore ffmpeg binaries (too large for GitHub)
+ffmpeg/
+
+# Ignore platform-specific binaries
+*.exe
+*.dll
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+venv/
+ffmpeg/
+*.exe
+*.dll
+
+
+app copy.py

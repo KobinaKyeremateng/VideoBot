@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to the Interview Portal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        p {
+            margin-bottom: 25px;
+            font-size: 16px;
+            color: #555;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 240px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Student Interview Portal</h2>
+        <p>Please enter your <b>Student ID</b> to begin:</p>
+        <form id="profileForm" onsubmit="startInterview(); return false;">
+            <input type="text" id="profileId" required placeholder="Enter Student ID" /><br>
+            <button type="submit">Start Interview</button>
+        </form>
+    </div>
+
+    <script>
+        function startInterview() {
+            const profileId = document.getElementById('profileId').value.trim();
+            if (profileId) {
+                localStorage.setItem('profileId', profileId);
+                window.location.href = "/instructions";  //will go to instructions page
+            }
+        }
+    </script>
+</body>
+</html>
