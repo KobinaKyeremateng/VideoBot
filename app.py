@@ -14,6 +14,8 @@ load_dotenv()
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
+#source venv/bin/activate
+
 
 #Get the API key from environment
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -198,17 +200,62 @@ def analyze():
         "detailed_report": detailed_report
     }
 
-    filename = f"session_{profile_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    filepath = os.path.join(os.path.dirname(__file__), filename)
 
-    with open(filepath, "w") as f:
+    # Ensure "responses" folder exists
+    response_folder = os.path.join(os.path.dirname(__file__), "responses")
+    os.makedirs(response_folder, exist_ok=True)
+
+    # filename = f"session_{profile_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    # filepath = os.path.join(os.path.dirname(__file__), filename)
+
+    # with open(filepath, "w") as f:
+    #     json.dump(session_data, f, indent=4)
+
+    # return jsonify({
+    #     "analysis_timestamp": datetime.now().isoformat(),
+    #     "summary": summary,
+    #     "report": detailed_report,
+    #     "filename": filename
+    # })
+
+     # Save JSON
+    filename_base = f"session_{profile_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    json_filename = filename_base + ".json"
+    #json_filepath = os.path.join(os.path.dirname(__file__), json_filename)
+    json_filepath = os.path.join(response_folder, json_filename)
+    
+
+    with open(json_filepath, "w") as f:
         json.dump(session_data, f, indent=4)
+
+    # Save TXT
+    txt_filename = filename_base + ".txt"
+    #txt_filepath = os.path.join(os.path.dirname(__file__), txt_filename)
+    txt_filepath = os.path.join(response_folder, txt_filename)
+    
+    
+    with open(txt_filepath, "w") as f:
+        f.write("=== Student Interview Analysis ===\n\n")
+        f.write(f"Profile ID: {profile_id}\n")
+        f.write(f"Session Timestamp: {session_data['session_timestamp']}\n\n")
+        
+        if job_overview:
+            f.write("Job Overview:\n")
+            f.write(job_overview + "\n\n")
+
+        f.write("Summary Points:\n")
+        for point in summary:
+            f.write("- " + point + "\n")
+        
+        f.write("\nDetailed Report:\n")
+        f.write(detailed_report + "\n")
 
     return jsonify({
         "analysis_timestamp": datetime.now().isoformat(),
         "summary": summary,
         "report": detailed_report,
-        "filename": filename
+        "json_file": json_filename,
+        "txt_file": txt_filename
     })
 
 # --------- Run --------- #
