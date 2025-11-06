@@ -83,6 +83,8 @@ def analyze_responses(qa_list):
             summary.append(f"Response to '{qa['question']}': {a}")
     return summary
 
+
+#generates the summary of the responses
 def generate_gpt_summary(summary_points):
     prompt = (
         "You are an academic counselor writing a detailed student interview report. "
@@ -153,6 +155,7 @@ def overview():
     if not answer:
         return jsonify({"error": "No answer provided"}), 400
 
+    #Gives an overview of profession 
     try:
         prompt = (
             f"Provide a brief and informative overview of the profession mentioned in the following answer:\n\n"
